@@ -1,10 +1,10 @@
 #include"LaneDetect.h"
 /*
-LaneDetectÀÇ »ı¼ºÀÚ.
-¿µ»ó ±âº»¼¼ÆÃÀ» ÇÑ´Ù.
-currFrame¿¡¼­ ¿µ»óÀÇ Å©±â¸¦ °áÁ¤ÇÑ´Ù. (¼­¹ö¿¡¼­ ¹Ş±âÀ§ÇØ 640 * 480À¸·Î ÇÏÀÚ.)
-Èå¸§
-LaneDetect -> nextFrame -> getLane(ROI¼¼ÆÃ) -> markLane(ÀüÃ³¸®) -> blobRemoval(ÀüÃ³¸® + Draw) -> getAngle
+LaneDetectì˜ ìƒì„±ì.
+ì˜ìƒ ê¸°ë³¸ì„¸íŒ…ì„ í•œë‹¤.
+currFrameì—ì„œ ì˜ìƒì˜ í¬ê¸°ë¥¼ ê²°ì •í•œë‹¤. (ì„œë²„ì—ì„œ ë°›ê¸°ìœ„í•´ 640 * 480ìœ¼ë¡œ í•˜ì.)
+íë¦„
+LaneDetect -> nextFrame -> getLane(ROIì„¸íŒ…) -> markLane(ì „ì²˜ë¦¬) -> blobRemoval(ì „ì²˜ë¦¬ + Draw) -> getAngle
 */
 LaneDetect::LaneDetect(Mat startFrame)
 {
@@ -13,12 +13,12 @@ LaneDetect::LaneDetect(Mat startFrame)
 
 	temp      = Mat(currFrame.rows, currFrame.cols, CV_8UC1, 0.0);     //stores possible lane markings
 	temp2     = Mat(currFrame.rows, currFrame.cols, CV_8UC1, 0.0);    //stores finally selected lane marks
-	//currFrameÀÇ ÀÌ¹ÌÁö Å©±â´ë·Î temp¸¦ ¼¼ÆÃÇØ³õ´Â´Ù.
+	//currFrameì˜ ì´ë¯¸ì§€ í¬ê¸°ëŒ€ë¡œ tempë¥¼ ì„¸íŒ…í•´ë†“ëŠ”ë‹¤.
 
 	vanishingPt   = currFrame.rows / 2;                            //for simplicity right now
 	ROIrows       = currFrame.rows - vanishingPt;                      //rows in regivon of interest
 	minSize       = 0.00015 * (currFrame.cols*currFrame.rows);          //min size of any region to be selected as lane
-	maxLaneWidth  = 0.025 * currFrame.cols;                       //approximate max lane width based on image size 5 0.025 ÀÎ½ÄÇÏ´Â Lane Å©±â°¡ ´Ş¶óÁø´Ù.
+	maxLaneWidth  = 0.025 * currFrame.cols;                       //approximate max lane width based on image size 5 0.025 ì¸ì‹í•˜ëŠ” Lane í¬ê¸°ê°€ ë‹¬ë¼ì§„ë‹¤.
 	smallLaneArea = 7 * minSize;
 	longLane      = 0.3 * currFrame.rows;
 	ratio         = 4;
@@ -27,7 +27,7 @@ LaneDetect::LaneDetect(Mat startFrame)
 	vertical_left   = 2 * currFrame.cols / 5;
 	vertical_right  = 3 * currFrame.cols / 5;
 	vertical_top    = 2 * currFrame.rows / 3;
-	//4°³ÀÇ Ã¢ »ı¼º
+	//4ê°œì˜ ì°½ ìƒì„±
 	namedWindow("lane", 2);
 	namedWindow("midstep", 2);
 	namedWindow("currframe", 2);
@@ -35,21 +35,21 @@ LaneDetect::LaneDetect(Mat startFrame)
 
 	getLane();
 }
-//ROI¼¼ÆÃ ÇÔ¼ö
+//ROIì„¸íŒ… í•¨ìˆ˜
 void LaneDetect::getLane()
 {
 	//ROI = bottom half
-	for (int i = vanishingPt; i < currFrame.rows; i++) //vP = 1/2 curr.row. ROI ¼³Á¤.
+	for (int i = vanishingPt; i < currFrame.rows; i++) //vP = 1/2 curr.row. ROI ì„¤ì •.
 		for (int j = 0; j < currFrame.cols; j++)
 		{
 			temp.at<uchar>(i, j)   = 0;
 			temp2.at<uchar>(i, j)  = 0;
-			//temp, temp2 ROI ¼¼ÆÃ
+			//temp, temp2 ROI ì„¸íŒ…
 		}
 	imshow("currframe", currFrame); //No setting image
 	blobRemoval();
 }
-//º»°İÀûÀÎ ÀüÃ³¸® ¾Ë°í¸®Áò.
+//ë³¸ê²©ì ì¸ ì „ì²˜ë¦¬ ì•Œê³ ë¦¬ì¦˜.
 void LaneDetect::markLane() 
 {
 	for (int i = vanishingPt; i < currFrame.rows; i++) //1/2 row
@@ -57,7 +57,7 @@ void LaneDetect::markLane()
 		// IF COLOUR IMAGE IS GIVEN then additional check can be done
 		// lane markings RGB values will be nearly same to each other(i.e without any hue)
 		// min lane width is taken to be 5
-		// »ö Â÷ÀÌ(RGB value)ÀÇ ºñ±³¸¦ ÅëÇÏ¿© Lane°ËÃâ.
+		// ìƒ‰ ì°¨ì´(RGB value)ì˜ ë¹„êµë¥¼ í†µí•˜ì—¬ Laneê²€ì¶œ.
 		laneWidth = 5 + maxLaneWidth*(i - vanishingPt) / ROIrows;
 		for (int j = laneWidth; j < currFrame.cols - laneWidth; j++)
 		{
@@ -77,17 +77,20 @@ void LaneDetect::markLane()
 		}
 	}
 }
-//ÃÖÁ¾ÀûÀ¸·Î °¢µµ¸¦ ±¸ÇÏ´Â ÇÔ¼ö.
-float LaneDetect::getAngle(Point mid_point)
+//ìµœì¢…ì ìœ¼ë¡œ ê°ë„ë¥¼ êµ¬í•˜ëŠ” í•¨ìˆ˜.
+void LaneDetect::setAngle(Point mid_point)
 {
 	Point mid_xy;
 	mid_xy.x          =  160;
 	mid_xy.y          =  480;
-	float angle       =  0;
 	float distance_a  =  mid_point.x - mid_xy.x;
 	float distance_b  =  mid_xy.y - mid_point.y;
 	//get angle
 	angle  =  atan2f(distance_b, distance_a) * 180 / 3.14 - 90;
+}
+
+float LaneDetect::getAngle()
+{
 	return angle;
 }
 void LaneDetect::blobRemoval()
@@ -95,7 +98,7 @@ void LaneDetect::blobRemoval()
 	markLane();
 	vector<vector<Point>> temp_sosil;
 	// find all contours in the binary image
-	// temp¿¡´Ù ±âÁ¸ contour°ª ÀúÀå.
+	// tempì—ë‹¤ ê¸°ì¡´ contourê°’ ì €ì¥.
 	temp.copyTo(binary_image);
 	findContours(binary_image, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	deque<int>circle_que;
@@ -105,11 +108,11 @@ void LaneDetect::blobRemoval()
 		for (size_t i = 0; i < contours.size(); ++i)
 		{
 			//====conditions for removing contours====//
-			//contourÀÇ °³º° ¿ø¼Ò¿¡ ´ëÇÑ Á¢±Ù.
+			//contourì˜ ê°œë³„ ì›ì†Œì— ëŒ€í•œ ì ‘ê·¼.
 			//blob size should not be less than lower threshold
 			//minSize = 0.0003 * (currFrame.cols(640)*currFrame.rows(480))   
-			//±âÁ¸ col (320) -> ÇöÀç col(640) 
-			//minsizeÀÇ °è¼ö¸¦ 0.00015·Î ÁÙ¿©µµ µÉµí.
+			//ê¸°ì¡´ col (320) -> í˜„ì¬ col(640) 
+			//minsizeì˜ ê³„ìˆ˜ë¥¼ 0.00015ë¡œ ì¤„ì—¬ë„ ë ë“¯.
 			contour_area = contourArea(contours[i]);
 		
 			if (contour_area > minSize)
@@ -126,7 +129,7 @@ void LaneDetect::blobRemoval()
 					blob_angle_deg = 90 + blob_angle_deg;
 
 				//if such big line has been detected then it has to be a (curved or a normal)lane
-				//»ı°¢ÀÌ»óÀ¸·Î Å« laneÀÌ µé¾î¿Íµµ laneÀ¸·Î Á¤ÀÇÇÑ´Ù.
+				//ìƒê°ì´ìƒìœ¼ë¡œ í° laneì´ ë“¤ì–´ì™€ë„ laneìœ¼ë¡œ ì •ì˜í•œë‹¤.
 				if (bounding_length > longLane || bounding_width > longLane)
 				{
 					drawContours(currFrame, contours, i, Scalar(255), CV_FILLED, 8);
@@ -143,8 +146,8 @@ void LaneDetect::blobRemoval()
 				//vertical blobs are allowed only near center-bottom region, where centre lane mark is present
 				//length:width >= ratio for valid line segments
 				//if area is very small then ratio limits are compensateda
-				//°î¼±.
-				//°î¼±Àº »öÃ³¸®¸¦ ´Ù¸£°Ô Çß´Ù. (Scalar(130))
+				//ê³¡ì„ .
+				//ê³¡ì„ ì€ ìƒ‰ì²˜ë¦¬ë¥¼ ë‹¤ë¥´ê²Œ í–ˆë‹¤. (Scalar(130))
 				else if ((blob_angle_deg <-10 || blob_angle_deg >-10) &&
 					     ((blob_angle_deg > -70 && blob_angle_deg < 70) ||
 					      (rotated_rect.center.y > vertical_top &&
@@ -167,10 +170,10 @@ void LaneDetect::blobRemoval()
 
 	}
 	//contour vote.
-	//circle_que¿¡´Â ÀÏÁ¤ Å©±â ÀÌ»ó(ÀÓÀÇ·Î 65·Î ÀâÀ½)ÀÇ contour¸¸ ÀúÀåÀ» ÇÏ¿´´Ù.
-	//circle_que_sizeÀÇ Å©±â°¡ 2ÀÌ»óÀ¸·Î ÀâÀº °ÍÀº. ÇöÀç circle que¿¡´Â Á÷¼±ÀÌ µé¾îÀÖ´Âµ¥
-	//Á÷¼±ÀÌ 2°³ ÀÌ»óÀÏ¶§¸¸ Àâ°Ú´Ù´Â ÀÇ¹Ì°¡ µÈ´Ù.
-	//ÇöÀç Á÷¼±ÀÇ ³¡ Á¡À¸·Î ºÎÅÍ ÁßÁ¡À» ±¸ÇÑ´Ù. 
+	//circle_queì—ëŠ” ì¼ì • í¬ê¸° ì´ìƒ(ì„ì˜ë¡œ 65ë¡œ ì¡ìŒ)ì˜ contourë§Œ ì €ì¥ì„ í•˜ì˜€ë‹¤.
+	//circle_que_sizeì˜ í¬ê¸°ê°€ 2ì´ìƒìœ¼ë¡œ ì¡ì€ ê²ƒì€. í˜„ì¬ circle queì—ëŠ” ì§ì„ ì´ ë“¤ì–´ìˆëŠ”ë°
+	//ì§ì„ ì´ 2ê°œ ì´ìƒì¼ë•Œë§Œ ì¡ê² ë‹¤ëŠ” ì˜ë¯¸ê°€ ëœë‹¤.
+	//í˜„ì¬ ì§ì„ ì˜ ë ì ìœ¼ë¡œ ë¶€í„° ì¤‘ì ì„ êµ¬í•œë‹¤. 
 	if (circle_que.size() >= 2) {
 
 		int temp_que_number = 0;
@@ -187,7 +190,7 @@ void LaneDetect::blobRemoval()
 			circle_que.pop_front();
 		}
 		Point circle_result;
-		//Á÷¼±ÀÇ ¾ç ³¡ Á¡À¸·Î ºÎÅÍ ±¸ÇÑ´Ù.
+		//ì§ì„ ì˜ ì–‘ ë ì ìœ¼ë¡œ ë¶€í„° êµ¬í•œë‹¤.
 		if (temp_contours_x[0] <= temp_contours_x[1]) {
 			circle_result.x = temp_contours_x[0] + (temp_contours_x[1] - temp_contours_x[0]) / 2;
 			circle_result.y = temp_contours_y[0] + (temp_contours_y[1] - temp_contours_y[0]) / 2;
@@ -198,13 +201,13 @@ void LaneDetect::blobRemoval()
 		}
 		float angle = 0;
 		circle(temp2, circle_result, 5, (0, 0, 255), -1);
-		angle = getAngle(circle_result);
+		setAngle(circle_result);
 		cout << "angle : " << angle << endl;
 	}
 
 	imshow("midstep", currFrame);
 	imshow("laneBlobs", temp2);
-	//resizeÇÊ¿äÇÒµí
+	//resizeí•„ìš”í• ë“¯
 	//mshow("lane", cdst);
 }
 
