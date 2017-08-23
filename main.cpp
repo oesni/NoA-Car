@@ -1,27 +1,46 @@
 #include"LaneDetect.h"
-clock_t start, stop;  //½Ã°£ÃøÁ¤¿ë º¯¼ö
+clock_t start, stop;  //ì‹œê°„ì¸¡ì •ìš© ë³€ìˆ˜
+void makeFromVid();
 
-// image »ý¼º ÇÔ¼ö makeFromVid
-// main ÇÔ¼ö
+
+int main()
+{	
+	makeFromVid();
+	waitKey(0);
+	destroyAllWindows();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void makeFromVid()
 {
 	Mat frame;
 	VideoCapture cap(0); // open the video file for reading
-
+	float temp_angle = 0;
 	if (!cap.isOpened())  // if not success, exit program
 		cout << "Cannot open the video file" << endl;
 
 	//cap.set(CV_CAP_PROP_POS_MSEC, 300); //start the video at 300ms
 
 	double fps = cap.get(CV_CAP_PROP_FPS); //get the frames per seconds of the video
-										   //¿øº»¿µ»óÀÇ frameÀ» ¹Þ´Â´Ù. 
+										   //ì›ë³¸ì˜ìƒì˜ frameì„ ë°›ëŠ”ë‹¤. 
 	cout << "Input video's Frame per seconds : " << fps << endl;
 
 	cap.read(frame);
 
 	LaneDetect detect(frame);
-	//»ý¼ºÀÚ¿¡¼­ ÃÊ±âÈ­°¡ µÈ´Ù.
+	//ìƒì„±ìžì—ì„œ ì´ˆê¸°í™”ê°€ ëœë‹¤.
 	while (1)
 	{
 		bool bSuccess = cap.read(frame); // read a new frame from video
@@ -30,7 +49,7 @@ void makeFromVid()
 			cout << "Cannot read the frame from video file" << endl;
 			break;
 		}
-
+		temp_angle = detect.getAngle();
 		cvtColor(frame, frame, CV_BGR2GRAY);
 
 		start = clock();
@@ -48,12 +67,4 @@ void makeFromVid()
 			}
 		}
 	}
-}
-
-int main()
-{
-	makeFromVid();
-	// makeFromVid("/home/yash/opencv-2.4.10/programs/road.m4v");
-	waitKey(0);
-	destroyAllWindows();
 }
