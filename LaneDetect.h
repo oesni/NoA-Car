@@ -12,13 +12,14 @@
 #include<deque>
 using namespace std;
 using namespace cv;
+
 class LaneDetect
 {
 public:
 	Mat currFrame; //stores the upcoming frame
 	Mat temp;      //stores intermediate results
 	Mat temp2;     //stores the final lane segmentshhh
-
+	
 	int diff, diffL, diffR;
 	int laneWidth;
 	int diffThreshTop;
@@ -48,14 +49,17 @@ public:
 	vector< vector<Point> > contours;
 	vector<Vec4i> hierarchy;
 	RotatedRect rotated_rect;
+	float angle;
 	////////////////////////////////////////  FUNCTION ///////////////////////////////////////////////
 	///////////////////////////////////////           ////////////////////////////////////////////////
 	LaneDetect(Mat startFrame);
 	void getLane();
 	void markLane();
-	float getAngle(Point mid_point);
+	void setAngle(Point mid_point);
 	void blobRemoval();
 	void nextFrame(Mat &nxt);
+	float getAngle();
+	
 };//end of class LaneDetect
 
 #endif // !LaneDetectHPP
