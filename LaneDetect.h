@@ -4,12 +4,15 @@
 #include <opencv2/core/core.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include <opencv2/highgui/highgui.hpp>
+#include "opencv2/video/tracking.hpp"
+#include<opencv2\tracking.hpp>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <math.h>
 #include <time.h>
 #include<deque>
+
 using namespace std;
 using namespace cv;
 
@@ -19,7 +22,7 @@ public:
 	Mat currFrame; //stores the upcoming frame
 	Mat temp;      //stores intermediate results
 	Mat temp2;     //stores the final lane segmentshhh
-	
+
 	int diff, diffL, diffR;
 	int laneWidth;
 	int diffThreshTop;
@@ -50,6 +53,8 @@ public:
 	vector<Vec4i> hierarchy;
 	RotatedRect rotated_rect;
 	float angle;
+	Point circle_result;
+
 	////////////////////////////////////////  FUNCTION ///////////////////////////////////////////////
 	///////////////////////////////////////           ////////////////////////////////////////////////
 	LaneDetect(Mat startFrame);
