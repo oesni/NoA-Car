@@ -4,7 +4,7 @@ NoA - Car
         Opencv 3.2(https://github.com/opencv/opencv/releases)
         Opencv 3.2 extraModule(https://github.com/opencv/opencv_contrib)
         C++
-        visual studio(2013, 2015, 2017)
+        visual studio(2013, 2015, 2017)
         
     How to add OpenCv extra module ?
         Blog
