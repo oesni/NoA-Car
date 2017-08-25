@@ -1,5 +1,5 @@
 NoA - Car
-**Baudrate**
+Baudrate
 AMB : 15200 / Kid_car : 9600
 setting 
 Line 13 of SerialComm.cpp
