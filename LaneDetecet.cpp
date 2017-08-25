@@ -11,46 +11,48 @@ LaneDetect::LaneDetect(Mat startFrame)
 	currFrame = Mat(640, 480, CV_8UC1, 0.0);                       //initialised the image size to 640x480
 	resize(startFrame, currFrame, currFrame.size());              // resize the input to required size
 
-	temp      = Mat(currFrame.rows, currFrame.cols, CV_8UC1, 0.0);     //stores possible lane markings
-	temp2     = Mat(currFrame.rows, currFrame.cols, CV_8UC1, 0.0);    //stores finally selected lane marks
-	//currFrame의 이미지 크기대로 temp를 세팅해놓는다.
-
-	vanishingPt   = currFrame.rows / 2;                            //for simplicity right now
-	ROIrows       = currFrame.rows - vanishingPt;                      //rows in regivon of interest
-	minSize       = 0.00015 * (currFrame.cols*currFrame.rows);          //min size of any region to be selected as lane
-	maxLaneWidth  = 0.025 * currFrame.cols;                       //approximate max lane width based on image size 5 0.025 인식하는 Lane 크기가 달라진다.
+	temp = Mat(currFrame.rows, currFrame.cols, CV_8UC1, 0.0);     //stores possible lane markings
+	temp2 = Mat(currFrame.rows, currFrame.cols, CV_8UC1, 0.0);    //stores finally selected lane marks
+																  //currFrame의 이미지 크기대로 temp를 세팅해놓는다.
+	vanishingPt = 0;
+	//vanishingPt = currFrame.rows / 2;                            //for simplicity right now
+	ROIrows = currFrame.rows - vanishingPt;                      //rows in regivon of interest
+	minSize = 0.00015 * (currFrame.cols*currFrame.rows);          //min size of any region to be selected as lane
+	maxLaneWidth = 0.025 * currFrame.cols;                       //approximate max lane width based on image size 5 0.025 인식하는 Lane 크기가 달라진다.
 	smallLaneArea = 7 * minSize;
-	longLane      = 0.3 * currFrame.rows;
-	ratio         = 4;
+	longLane = 0.3 * currFrame.rows;
+	ratio = 4;
 	//these mark the possible ROI for vertical lane segments and to filter vehicle glare
 	//ROI 4 vertical lane segments
-	vertical_left   = 2 * currFrame.cols / 5;
-	vertical_right  = 3 * currFrame.cols / 5;
-	vertical_top    = 2 * currFrame.rows / 3;
+	vertical_left = 2 * currFrame.cols / 5;
+	vertical_right = 3 * currFrame.cols / 5;
+	vertical_top = 2 * currFrame.rows / 3;
 	//4개의 창 생성
 	namedWindow("lane", 2);
 	namedWindow("midstep", 2);
 	namedWindow("currframe", 2);
 	namedWindow("laneBlobs", 2);
+	
 
 	getLane();
 }
 //ROI세팅 함수
 void LaneDetect::getLane()
 {
+
 	//ROI = bottom half
 	for (int i = vanishingPt; i < currFrame.rows; i++) //vP = 1/2 curr.row. ROI 설정.
 		for (int j = 0; j < currFrame.cols; j++)
 		{
-			temp.at<uchar>(i, j)   = 0;
-			temp2.at<uchar>(i, j)  = 0;
+			temp.at<uchar>(i, j) = 0;
+			temp2.at<uchar>(i, j) = 0;
 			//temp, temp2 ROI 세팅
 		}
 	imshow("currframe", currFrame); //No setting image
 	blobRemoval();
 }
 //본격적인 전처리 알고리즘.
-void LaneDetect::markLane() 
+void LaneDetect::markLane()
 {
 	for (int i = vanishingPt; i < currFrame.rows; i++) //1/2 row
 	{
@@ -61,14 +63,14 @@ void LaneDetect::markLane()
 		laneWidth = 5 + maxLaneWidth*(i - vanishingPt) / ROIrows;
 		for (int j = laneWidth; j < currFrame.cols - laneWidth; j++)
 		{
-			diffL         =    currFrame.at<uchar>(i, j) - currFrame.at<uchar>(i, j - laneWidth);
-			diffR         =    currFrame.at<uchar>(i, j) - currFrame.at<uchar>(i, j + laneWidth);
-			diff          =    diffL + diffR - abs(diffL - diffR);
-			diffThreshLow =    currFrame.at<uchar>(i, j) >> 1;   //1 right bit shifts to make it 0.5 times
-			//diffThreshTop = 1.2*currFrame.at<uchar>(i,j);
-			//both left and right differences can be made to contribute
-			//at least by certain threshold (which is >0 right now)
-			//total minimum Diff should be at least more than 5 to avoid noise
+			diffL = currFrame.at<uchar>(i, j) - currFrame.at<uchar>(i, j - laneWidth);
+			diffR = currFrame.at<uchar>(i, j) - currFrame.at<uchar>(i, j + laneWidth);
+			diff = diffL + diffR - abs(diffL - diffR);
+			diffThreshLow = currFrame.at<uchar>(i, j) >> 1;   //1 right bit shifts to make it 0.5 times
+															  //diffThreshTop = 1.2*currFrame.at<uchar>(i,j);
+															  //both left and right differences can be made to contribute
+															  //at least by certain threshold (which is >0 right now)
+															  //total minimum Diff should be at least more than 5 to avoid noise
 			if (diffL > 0 && diffR > 0 && diff > 5)
 				if (diff >= diffThreshLow /*&& diff<= diffThreshTop*/) {
 					temp.at<uchar>(i, j) = 255;
@@ -81,12 +83,12 @@ void LaneDetect::markLane()
 void LaneDetect::setAngle(Point mid_point)
 {
 	Point mid_xy;
-	mid_xy.x          =  160;
-	mid_xy.y          =  480;
-	float distance_a  =  mid_point.x - mid_xy.x;
-	float distance_b  =  mid_xy.y - mid_point.y;
+	mid_xy.x = 160;
+	mid_xy.y = 480;
+	float distance_a = mid_point.x - mid_xy.x;
+	float distance_b = mid_xy.y - mid_point.y;
 	//get angle
-	angle  =  atan2f(distance_b, distance_a) * 180 / 3.14 - 90;
+	angle = atan2f(distance_b, distance_a) * 180 / 3.14 - 90;
 }
 
 float LaneDetect::getAngle()
@@ -103,6 +105,8 @@ void LaneDetect::blobRemoval()
 	findContours(binary_image, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	deque<int>circle_que;
 	// for removing invalid blobs
+	
+
 	if (!contours.empty())
 	{
 		for (size_t i = 0; i < contours.size(); ++i)
@@ -114,7 +118,7 @@ void LaneDetect::blobRemoval()
 			//기존 col (320) -> 현재 col(640) 
 			//minsize의 계수를 0.00015로 줄여도 될듯.
 			contour_area = contourArea(contours[i]);
-		
+
 			if (contour_area > minSize)
 			{
 				rotated_rect = minAreaRect(contours[i]);
@@ -149,9 +153,9 @@ void LaneDetect::blobRemoval()
 				//곡선.
 				//곡선은 색처리를 다르게 했다. (Scalar(130))
 				else if ((blob_angle_deg <-10 || blob_angle_deg >-10) &&
-					     ((blob_angle_deg > -70 && blob_angle_deg < 70) ||
-					      (rotated_rect.center.y > vertical_top &&
-						   rotated_rect.center.x > vertical_left && rotated_rect.center.x < vertical_right))) //if condition
+					((blob_angle_deg > -70 && blob_angle_deg < 70) ||
+					(rotated_rect.center.y > vertical_top &&
+						rotated_rect.center.x > vertical_left && rotated_rect.center.x < vertical_right))) //if condition
 				{
 
 					if ((bounding_length / bounding_width) >= ratio || (bounding_width / bounding_length) >= ratio
@@ -175,21 +179,23 @@ void LaneDetect::blobRemoval()
 	//직선이 2개 이상일때만 잡겠다는 의미가 된다.
 	//현재 직선의 끝 점으로 부터 중점을 구한다. 
 	if (circle_que.size() >= 2) {
+		KalmanFilter KF(4, 2, 0);
+		KF.transitionMatrix = (Mat_<float>(4, 4) << 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1);
+		Mat_<float> measurement(2, 1); measurement.setTo(Scalar(0));
 
 		int temp_que_number = 0;
-		int temp_que_size   = 0;
-		temp_que_size       = circle_que.size();
+		int temp_que_size = 0;
+		temp_que_size = circle_que.size();
 		vector<int> temp_contours_x;
 		vector<int> temp_contours_y;
 
 		for (int i = 0; i < temp_que_size; i++)
 		{
 			temp_que_number = circle_que[0];
-			temp_contours_x.push_back(contours[temp_que_number][0].x);
-			temp_contours_y.push_back(contours[temp_que_number][0].y);
+			temp_contours_x.push_back(contours[temp_que_number][63].x);
+			temp_contours_y.push_back(contours[temp_que_number][63].y);
 			circle_que.pop_front();
 		}
-		Point circle_result;
 		//직선의 양 끝 점으로 부터 구한다.
 		if (temp_contours_x[0] <= temp_contours_x[1]) {
 			circle_result.x = temp_contours_x[0] + (temp_contours_x[1] - temp_contours_x[0]) / 2;
@@ -200,9 +206,32 @@ void LaneDetect::blobRemoval()
 			circle_result.y = temp_contours_y[1] + (temp_contours_y[0] - temp_contours_y[1]) / 2;
 		}
 		float angle = 0;
-		circle(temp2, circle_result, 5, (0, 0, 255), -1);
-		setAngle(circle_result);
-		cout << "angle : " << angle << endl;
+		//circle(temp2, circle_result, 5, (0, 0, 255), -1);
+		//setAngle(circle_result);
+
+		KF.statePre.at<float>(0) = circle_result.x;
+		KF.statePre.at<float>(1) = circle_result.y;
+		KF.statePre.at<float>(2) = 0;
+		KF.statePre.at<float>(3) = 0;
+
+		setIdentity(KF.measurementMatrix);
+		setIdentity(KF.processNoiseCov, Scalar::all(1e-4));
+		setIdentity(KF.measurementNoiseCov, Scalar::all(10));
+		setIdentity(KF.errorCovPost, Scalar::all(.1));
+
+		Mat prediction = KF.predict();
+		Point predictPt(prediction.at<float>(0), prediction.at<float>(1));
+		measurement(0) = circle_result.x;
+		measurement(1) = circle_result.y;
+
+		Mat estimated = KF.correct(measurement);
+
+		Point statePt(estimated.at<float>(0), estimated.at<float>(1));
+		Point measPt(measurement(0), measurement(1));
+		circle(temp2, statePt, 15, 135, -1);
+		circle(temp2, measPt, 5, 255, -1);
+		setAngle(measPt);
+
 	}
 
 	imshow("midstep", currFrame);
@@ -210,6 +239,7 @@ void LaneDetect::blobRemoval()
 	//resize필요할듯
 	//mshow("lane", cdst);
 }
+
 
 
 void LaneDetect::nextFrame(Mat &nxt)
