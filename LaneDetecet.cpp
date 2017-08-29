@@ -14,8 +14,9 @@ LaneDetect::LaneDetect(Mat startFrame)
 	temp = Mat(currFrame.rows, currFrame.cols, CV_8UC1, 0.0);     //stores possible lane markings
 	temp2 = Mat(currFrame.rows, currFrame.cols, CV_8UC1, 0.0);    //stores finally selected lane marks
 																  //currFrame의 이미지 크기대로 temp를 세팅해놓는다.
+
+																  //vanishingPt   = currFrame.rows / 2;                            //for simplicity right now
 	vanishingPt = 0;
-	//vanishingPt = currFrame.rows / 2;                            //for simplicity right now
 	ROIrows = currFrame.rows - vanishingPt;                      //rows in regivon of interest
 	minSize = 0.00015 * (currFrame.cols*currFrame.rows);          //min size of any region to be selected as lane
 	maxLaneWidth = 0.025 * currFrame.cols;                       //approximate max lane width based on image size 5 0.025 인식하는 Lane 크기가 달라진다.
@@ -32,14 +33,26 @@ LaneDetect::LaneDetect(Mat startFrame)
 	namedWindow("midstep", 2);
 	namedWindow("currframe", 2);
 	namedWindow("laneBlobs", 2);
+
+	KF = KalmanFilter(4, 2, 0);
+	KF.transitionMatrix = (Mat_<float>(4, 4) << 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1);
 	
 
+	KF.statePre.at<float>(0) = 240;
+	KF.statePre.at<float>(1) = 320;
+	KF.statePre.at<float>(2) = 0;
+	KF.statePre.at<float>(3) = 0;
+	setIdentity(KF.measurementMatrix);
+	setIdentity(KF.processNoiseCov, Scalar::all(1e-4));
+	setIdentity(KF.measurementNoiseCov, Scalar::all(10));
+	setIdentity(KF.errorCovPost, Scalar::all(.1));
+	measurement = Mat_<float>(2, 1);
+	measurement.setTo(Scalar(0));
 	getLane();
 }
 //ROI세팅 함수
-void LaneDetect::getLane()
+void LaneDetect::getLane()	
 {
-
 	//ROI = bottom half
 	for (int i = vanishingPt; i < currFrame.rows; i++) //vP = 1/2 curr.row. ROI 설정.
 		for (int j = 0; j < currFrame.cols; j++)
@@ -81,10 +94,10 @@ void LaneDetect::markLane()
 }
 //최종적으로 각도를 구하는 함수.
 void LaneDetect::setAngle(Point mid_point)
-{
+{ //
 	Point mid_xy;
-	mid_xy.x = 160;
-	mid_xy.y = 480;
+	mid_xy.x = 0;
+	mid_xy.y = 0;
 	float distance_a = mid_point.x - mid_xy.x;
 	float distance_b = mid_xy.y - mid_point.y;
 	//get angle
@@ -105,8 +118,6 @@ void LaneDetect::blobRemoval()
 	findContours(binary_image, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	deque<int>circle_que;
 	// for removing invalid blobs
-	
-
 	if (!contours.empty())
 	{
 		for (size_t i = 0; i < contours.size(); ++i)
@@ -140,7 +151,7 @@ void LaneDetect::blobRemoval()
 					drawContours(temp2, contours, i, Scalar(255), CV_FILLED, 8);
 					for (int q = 0; q < contours.size(); q++) //vector<vector<point>>
 					{
-						if (contours[q].size() >= 65) {
+						if (contours[q].size() >= 90) {
 							circle_que.push_back(q);
 
 						}
@@ -179,59 +190,45 @@ void LaneDetect::blobRemoval()
 	//직선이 2개 이상일때만 잡겠다는 의미가 된다.
 	//현재 직선의 끝 점으로 부터 중점을 구한다. 
 	if (circle_que.size() >= 2) {
-		KalmanFilter KF(4, 2, 0);
-		KF.transitionMatrix = (Mat_<float>(4, 4) << 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1);
-		Mat_<float> measurement(2, 1); measurement.setTo(Scalar(0));
-
-		int temp_que_number = 0;
-		int temp_que_size = 0;
-		temp_que_size = circle_que.size();
-		vector<int> temp_contours_x;
-		vector<int> temp_contours_y;
-
-		for (int i = 0; i < temp_que_size; i++)
-		{
-			temp_que_number = circle_que[0];
-			temp_contours_x.push_back(contours[temp_que_number][63].x);
-			temp_contours_y.push_back(contours[temp_que_number][63].y);
-			circle_que.pop_front();
+		vector<Point> temp_Point;
+		temp_Point.resize(circle_que.size());
+		line(temp2, Point(20, 440), Point(20, 640), 255, 3); //limit line
+		line(temp2, Point(460, 440), Point(460, 640), 255, 3); //limit line
+		line(temp2, Point(20, 440), Point(460, 440), 255, 3); //Point line
+															  //y = 640, x = 480
+															  //circle que에는 85이상인 contour number가 저장. && (contours[circle_que[i]][j].x >=20 ) && contours[circle_que[i]][j].x >= 620
+		for (int i = 0; i < circle_que.size(); i++) {
+			for (int j = 0; j < contours[circle_que[i]].size(); j++) {
+				if ((contours[circle_que[i]][j].y >= 430) && (contours[circle_que[i]][j].y <= 450) && (contours[circle_que[i]][j].x >= 20) && contours[circle_que[i]][j].x <= 620) {
+					temp_Point[i] = contours[circle_que[i]][j];
+				}
+			}
 		}
-		//직선의 양 끝 점으로 부터 구한다.
-		if (temp_contours_x[0] <= temp_contours_x[1]) {
-			circle_result.x = temp_contours_x[0] + (temp_contours_x[1] - temp_contours_x[0]) / 2;
-			circle_result.y = temp_contours_y[0] + (temp_contours_y[1] - temp_contours_y[0]) / 2;
+
+		Point circle_result;
+		if (temp_Point[0].x <= temp_Point[1].x) {
+			circle_result.x = temp_Point[0].x + (temp_Point[1].x - temp_Point[0].x) / 2;
+			circle_result.y = 440;
 		}
 		else {
-			circle_result.x = temp_contours_x[1] + (temp_contours_x[0] - temp_contours_x[1]) / 2;
-			circle_result.y = temp_contours_y[1] + (temp_contours_y[0] - temp_contours_y[1]) / 2;
+			circle_result.x = temp_Point[1].x + (temp_Point[0].x - temp_Point[1].x) / 2;
+			circle_result.y = 440;
 		}
-		float angle = 0;
-		//circle(temp2, circle_result, 5, (0, 0, 255), -1);
-		//setAngle(circle_result);
 
-		KF.statePre.at<float>(0) = circle_result.x;
-		KF.statePre.at<float>(1) = circle_result.y;
-		KF.statePre.at<float>(2) = 0;
-		KF.statePre.at<float>(3) = 0;
+		kalmanFiltering(circle_result);
+		circle(temp2, circle_result, 5, 255, -1);
+		prev_point = circle_result;
+		//circle(temp2, Point(130, 130), 255, 30);
 
-		setIdentity(KF.measurementMatrix);
-		setIdentity(KF.processNoiseCov, Scalar::all(1e-4));
-		setIdentity(KF.measurementNoiseCov, Scalar::all(10));
-		setIdentity(KF.errorCovPost, Scalar::all(.1));
+	}
+	else {
+		if (prev_point.x != 0 && prev_point.y != 0) {
+			line(temp2, Point(20, 440), Point(20, 640), 150, 3); //limit line
+			line(temp2, Point(460, 440), Point(460, 640), 150, 3); //limit line
+			line(temp2, Point(20, 440), Point(460, 440), 150, 3); //Point line
+			kalmanFiltering(prev_point);
 
-		Mat prediction = KF.predict();
-		Point predictPt(prediction.at<float>(0), prediction.at<float>(1));
-		measurement(0) = circle_result.x;
-		measurement(1) = circle_result.y;
-
-		Mat estimated = KF.correct(measurement);
-
-		Point statePt(estimated.at<float>(0), estimated.at<float>(1));
-		Point measPt(measurement(0), measurement(1));
-		circle(temp2, statePt, 15, 135, -1);
-		circle(temp2, measPt, 5, 255, -1);
-		setAngle(measPt);
-
+		}
 	}
 
 	imshow("midstep", currFrame);
@@ -241,11 +238,37 @@ void LaneDetect::blobRemoval()
 }
 
 
-
 void LaneDetect::nextFrame(Mat &nxt)
 {
 	//currFrame = nxt;                        //if processing is to be done at original size
 
 	resize(nxt, currFrame, currFrame.size()); //resizing the input image for faster processing
 	getLane();
+}
+
+void LaneDetect::kalmanFiltering(Point prev_result) {
+
+
+	/////////////////////////////////////////////////////////////////////////
+	// First predict, to update the internal statePre variable
+	Mat prediction = KF.predict();
+	Point predictPt(prediction.at<float>(0), prediction.at<float>(1));
+
+		// Get mouse point
+	measurement(0) = prev_result.x;
+	measurement(1) = prev_result.y;
+
+		// The update phase 
+	Mat estimated = KF.correct(measurement);
+
+	Point statePt(estimated.at<float>(0), estimated.at<float>(1));
+	Point measPt(measurement(0), measurement(1));
+		// plot points
+	circle(temp2, measPt, 15, 100, -1);
+
+	mousev.push_back(measPt);
+	kalmanv.push_back(statePt);
+
+	
+
 }
