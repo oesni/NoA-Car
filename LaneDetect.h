@@ -4,15 +4,14 @@
 #include <opencv2/core/core.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include <opencv2/highgui/highgui.hpp>
-#include "opencv2/video/tracking.hpp"
-#include<opencv2\tracking.hpp>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <math.h>
 #include <time.h>
 #include<deque>
-
+#include<opencv2\tracking.hpp>
+#include<opencv2\video\tracking.hpp>
 using namespace std;
 using namespace cv;
 
@@ -22,7 +21,7 @@ public:
 	Mat currFrame; //stores the upcoming frame
 	Mat temp;      //stores intermediate results
 	Mat temp2;     //stores the final lane segmentshhh
-
+	
 	int diff, diffL, diffR;
 	int laneWidth;
 	int diffThreshTop;
@@ -53,7 +52,11 @@ public:
 	vector<Vec4i> hierarchy;
 	RotatedRect rotated_rect;
 	float angle;
-	Point circle_result;
+	Point prev_point;
+	deque<int>circle_que;
+	KalmanFilter KF;
+	Mat_<float> measurement;
+	vector<Point> mousev, kalmanv;
 
 	////////////////////////////////////////  FUNCTION ///////////////////////////////////////////////
 	///////////////////////////////////////           ////////////////////////////////////////////////
@@ -64,7 +67,8 @@ public:
 	void blobRemoval();
 	void nextFrame(Mat &nxt);
 	float getAngle();
-	
+	void kalmanFiltering(Point prev_result);
+
 };//end of class LaneDetect
 
 #endif // !LaneDetectHPP
