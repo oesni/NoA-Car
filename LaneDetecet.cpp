@@ -264,8 +264,8 @@ void LaneDetect::kalmanFiltering(Point prev_result) {
 	Point statePt(estimated.at<float>(0), estimated.at<float>(1));
 	Point measPt(measurement(0), measurement(1));
 		// plot points
-	circle(temp2, measPt, 15, 100, -1);
-
+	//circle(temp2, measPt, 15, 100, -1);
+	circle(temp2, statePt, 25, 130, -1);
 	mousev.push_back(measPt);
 	kalmanv.push_back(statePt);
 
