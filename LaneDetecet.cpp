@@ -261,7 +261,7 @@ void LaneDetect::kalmanFiltering(Point prev_result) {
 		// The update phase 
 	Mat estimated = KF.correct(measurement);
 
-	Point statePt(estimated.at<float>(0), estimated.at<float>(1));
+	Point statePt(estimated.at<float>(0), estimated.at<float>(1)); //estimate point
 	Point measPt(measurement(0), measurement(1));
 		// plot points
 	//circle(temp2, measPt, 15, 100, -1);
