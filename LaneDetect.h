@@ -52,12 +52,14 @@ public:
 	vector<Vec4i> hierarchy;
 	RotatedRect rotated_rect;
 	float angle;
+	float k_angle;
 	Point prev_point;
 	deque<int>circle_que;
 	KalmanFilter KF;
 	Mat_<float> measurement;
 	vector<Point> mousev, kalmanv;
-
+	Point measPt;
+	Point statePt;
 	////////////////////////////////////////  FUNCTION ///////////////////////////////////////////////
 	///////////////////////////////////////           ////////////////////////////////////////////////
 	LaneDetect(Mat startFrame);
@@ -68,6 +70,8 @@ public:
 	void nextFrame(Mat &nxt);
 	float getAngle();
 	void kalmanFiltering(Point prev_result);
+	void set_K_Angle(Point mid_point);
+	float get_K_Angle();
 
 };//end of class LaneDetect
 
