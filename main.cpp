@@ -1,5 +1,6 @@
 #include"LaneDetect.h"
 clock_t start, stop;  //시간측정용 변수
+clock_t whole_start, whole_stop;
 void makeFromVid();
 
 
@@ -33,6 +34,7 @@ void makeFromVid()
 	cap.read(frame);
 
 	LaneDetect detect(frame);
+	whole_start = clock();
 	//생성자에서 초기화가 된다.
 	while (1)
 	{
@@ -42,14 +44,22 @@ void makeFromVid()
 			cout << "Cannot read the frame from video file" << endl;
 			break;
 		}
-		temp_angle = detect.getAngle();
+		if (whole_stop <=10) {
+			temp_angle = detect.getAngle();
+		}
+		else {
+			temp_angle = detect.get_K_Angle();
+		}
 		cvtColor(frame, frame, CV_BGR2GRAY);
 		//circle(detect.temp2, Point(130, 200), 255, 30);
 		start = clock();
 		detect.nextFrame(frame);
+		
 		stop = clock();
+		whole_stop = clock()/1000;
 		cout << "fps : " << 1.0 / (((double)(stop - start)) / CLOCKS_PER_SEC) << endl;
-
+		cout << "angle : " << temp_angle << endl;
+		cout << "Clock : " << whole_stop << endl;
 		if (waitKey(10) == 27) //wait for 'esc' key press for 10 ms. If 'esc' key is pressed, break loop
 		{
 			cout << "video paused!, press q to quit, any other key to continue" << endl;
