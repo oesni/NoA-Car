@@ -4,16 +4,26 @@
 #include <opencv2/core/core.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include <opencv2/highgui/highgui.hpp>
+#include "opencv2/video/tracking.hpp"
+#include <opencv2\tracking.hpp>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <math.h>
 #include <time.h>
-#include<deque>
-#include<opencv2\tracking.hpp>
-#include<opencv2\video\tracking.hpp>
+#include <deque>
+
 using namespace std;
-using namespace cv;
+using cv::Mat;
+using cv::waitKey;
+using cv::Size2f;
+using cv::Vec2f;
+using cv::Point;
+using cv::Vec4i;
+using cv::RotatedRect;
+using cv::KalmanFilter;
+using cv::Mat_;
+
 
 class LaneDetect
 {
@@ -21,7 +31,7 @@ public:
 	Mat currFrame; //stores the upcoming frame
 	Mat temp;      //stores intermediate results
 	Mat temp2;     //stores the final lane segmentshhh
-	
+
 	int diff, diffL, diffR;
 	int laneWidth;
 	int diffThreshTop;
