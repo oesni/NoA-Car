@@ -1,4 +1,8 @@
 #include"LaneDetect.h"
+using cv::namedWindow;
+using cv::Scalar;
+using cv::KalmanFilter;
+using cv::Mat_;
 /*
 LaneDetect의 생성자.
 영상 기본세팅을 한다.
@@ -36,7 +40,7 @@ LaneDetect::LaneDetect(Mat startFrame)
 
 	KF = KalmanFilter(4, 2, 0);
 	KF.transitionMatrix = (Mat_<float>(4, 4) << 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1);
-	
+
 
 	KF.statePre.at<float>(0) = 240;
 	KF.statePre.at<float>(1) = 320;
@@ -51,7 +55,7 @@ LaneDetect::LaneDetect(Mat startFrame)
 	getLane();
 }
 //ROI세팅 함수
-void LaneDetect::getLane()	
+void LaneDetect::getLane()
 {
 	//ROI = bottom half
 	for (int i = vanishingPt; i < currFrame.rows; i++) //vP = 1/2 curr.row. ROI 설정.
@@ -213,7 +217,7 @@ void LaneDetect::blobRemoval()
 			line(temp2, Point(20, 440), Point(460, 440), 150, 3); //Point line
 			setAngle(prev_point);
 			kalmanFiltering(prev_point);
-			
+
 		}
 	}
 
@@ -240,16 +244,16 @@ void LaneDetect::kalmanFiltering(Point prev_result) {
 	Mat prediction = KF.predict();
 	Point predictPt(prediction.at<float>(0), prediction.at<float>(1));
 
-		// Get mouse point
+	// Get mouse point
 	measurement(0) = prev_result.x;
 	measurement(1) = prev_result.y;
 
-		// The update phase 
+	// The update phase 
 	Mat estimated = KF.correct(measurement);
 
 	statePt.x = estimated.at<float>(0); statePt.y = estimated.at<float>(1); //estimate point
 	measPt.x = measurement(0); measPt.y = measurement(1);
-		// plot points
+	// plot points
 	//circle(temp2, measPt, 15, 100, -1);
 	circle(temp2, statePt, 25, 130, -1);
 	mousev.push_back(measPt);
@@ -265,7 +269,7 @@ void LaneDetect::setAngle(Point mid_point)
 	float distance_a = mid_point.x - mid_xy.x;
 	float distance_b = mid_xy.y - mid_point.y;
 	//get angle
-	angle = atan2f(distance_b, distance_a) * 180 / 3.14 - 90;
+	angle = atan2f(distance_b, distance_a) * 180 / 3.14 - 60;
 }
 float LaneDetect::getAngle()
 {
@@ -279,7 +283,7 @@ void LaneDetect::set_K_Angle(Point mid_point) {
 	float distance_a = mid_point.x - mid_xy.x;
 	float distance_b = mid_xy.y - mid_point.y;
 	//get angle
-	k_angle = atan2f(distance_b, distance_a) * 180 / 3.14 - 90;
+	k_angle = atan2f(distance_b, distance_a) * 180 / 3.14 - 60;
 }
 float LaneDetect::get_K_Angle() {
 	return k_angle;
